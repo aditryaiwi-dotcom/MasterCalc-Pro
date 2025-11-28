@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MasterCalc Pro | Professional Utility Suite</title>
+    
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* --- CSS VARIABLES & FONTS --- */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-glow: rgba(79, 70, 229, 0.4);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgb(239, 246, 255) 0%, rgb(255, 255, 255) 90%);
+            --card-hover: translateY(-5px);
+            --green-profit: #16a34a;
+            --red-loss: #dc2626;
+        }
+
+        body.dark-mode {
+            --primary: #818cf8;
+            --primary-dark: #6366f1;
+            --primary-glow: rgba(129, 140, 248, 0.4);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(15, 23, 42, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --bg-gradient: radial-gradient(circle at 10% 20%, rgb(15, 23, 42) 0%, rgb(2, 6, 23) 90%);
+            --green-profit: #4ade80;
+            --red-loss: #f87171;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* --- GLASS EFFECT --- */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Background Blobs */
+        .blob {
+            position: fixed; width: 600px; height: 600px; border-radius: 50%;
+            filter: blur(100px); opacity: 0.4; z-index: -1; pointer-events: none;
+            animation: float 10s infinite alternate;
+        }
+        .blob-1 { background: #60a5fa; top: -150px; left: -150px; }
+        .blob-2 { background: #c084fc; bottom: -150px; right: -150px; animation-delay: 2s; }
+
+        @keyframes float { from { transform: translate(0, 0); } to { transform: translate(40px, 60px); } }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            position: sticky; top: 0; z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .brand { font-size: 1.5rem; font-weight: 700; color: var(--text-main); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .brand i { color: var(--primary); }
+
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-link { text-decoration: none; color: var(--text-muted); font-weight: 500; transition: 0.2s; cursor: pointer; }
+        .nav-link:hover { color: var(--primary); }
+        
+        .theme-btn {
+            background: none; border: 1px solid var(--glass-border); padding: 8px;
+            border-radius: 50%; cursor: pointer; color: var(--text-main); transition: 0.3s;
+        }
+        .theme-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* --- HERO --- */
+        .hero {
+            text-align: center; padding: 6rem 1rem 4rem;
+            max-width: 900px; margin: 0 auto;
+        }
+        .hero h1 {
+            font-size: 3.5rem; line-height: 1.1; font-weight: 700; margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero p { font-size: 1.25rem; color: var(--text-muted); margin-bottom: 2.5rem; }
+        .cta-btn {
+            padding: 1rem 2.5rem; background: var(--primary); color: white;
+            border-radius: 50px; text-decoration: none; font-weight: 600;
+            box-shadow: 0 10px 25px var(--primary-glow); transition: transform 0.2s;
+            border: none; cursor: pointer; font-size: 1.1rem;
+        }
+        .cta-btn:hover { transform: translateY(-3px); background: var(--primary-dark); }
+
+        /* --- GRID LAYOUT --- */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+        .section-header { text-align: center; margin: 4rem 0 2rem; }
+        .section-header h2 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .section-header p { color: var(--text-muted); }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.5rem; }
+
+        .card {
+            padding: 2rem; border-radius: 1.5rem; transition: 0.3s;
+            cursor: pointer; text-align: left; position: relative; overflow: hidden;
+        }
+        .card:hover { transform: var(--card-hover); border-color: var(--primary); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        
+        .icon-box {
+            width: 50px; height: 50px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; margin-bottom: 1rem; color: white;
+        }
+
+        /* Tool Colors */
+        .bg-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        .bg-green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .bg-orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+        .bg-purple { background: linear-gradient(135deg, #a855f7, #7c3aed); }
+        .bg-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .bg-teal { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+        .bg-dark { background: linear-gradient(135deg, #475569, #1e293b); }
+        .bg-pink { background: linear-gradient(135deg, #ec4899, #db2777); }
+
+        /* --- ABOUT --- */
+        .about { margin-top: 6rem; padding: 4rem 2rem; text-align: center; border-radius: 2rem; }
+        .stats { display: flex; justify-content: center; gap: 3rem; margin-top: 2rem; flex-wrap: wrap; }
+        .stat-item h3 { font-size: 2.5rem; color: var(--primary); margin-bottom: 0.2rem; }
+
+        /* --- VIEWS --- */
+        #app-view, #legal-view { display: none; margin-top: 2rem; min-height: 80vh; animation: fadeUp 0.4s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .view-container { max-width: 800px; margin: 0 auto; }
+        
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            color: var(--text-muted); cursor: pointer; font-weight: 500; margin-bottom: 1.5rem;
+            padding: 8px 16px; border-radius: 8px; transition: 0.2s;
+        }
+        .back-btn:hover { background: rgba(0,0,0,0.05); color: var(--primary); }
+
+        /* --- TOOL UI --- */
+        .tool-panel { padding: 2.5rem; border-radius: 1.5rem; }
+        .input-group { margin-bottom: 1.5rem; }
+        .label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--text-muted); }
+        .input {
+            width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);
+            background: rgba(255,255,255,0.05); color: var(--text-main); font-size: 1rem; outline: none; transition: 0.2s;
+        }
+        .input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+
+        .btn-action {
+            width: 100%; padding: 1rem; background: var(--primary); color: white;
+            border: none; border-radius: 12px; font-weight: 600; cursor: pointer;
+            transition: 0.2s; margin-top: 1rem;
+        }
+        .btn-action:hover { opacity: 0.9; }
+
+        .result-box {
+            margin-top: 2rem; padding: 1.5rem; background: rgba(79, 70, 229, 0.08);
+            border-radius: 12px; text-align: center; border: 1px solid rgba(79, 70, 229, 0.2);
+            color: var(--text-main); font-size: 1.2rem; font-weight: 600;
+        }
+
+        /* --- FOOTER --- */
+        .footer {
+            margin-top: 6rem; padding: 4rem 2rem 2rem;
+            background: var(--glass-bg); border-top: 1px solid var(--glass-border);
+        }
+        .footer-content {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem; max-width: 1200px; margin: 0 auto;
+        }
+        .footer h4 { margin-bottom: 1rem; color: var(--text-main); font-weight: 600; }
+        .footer ul { list-style: none; }
+        .footer li { margin-bottom: 0.8rem; }
+        .footer a { text-decoration: none; color: var(--text-muted); transition: 0.2s; font-size: 0.95rem; }
+        .footer a:hover { color: var(--primary); }
+        .copyright { text-align: center; margin-top: 3rem; color: var(--text-muted); font-size: 0.9rem; border-top: 1px solid var(--glass-border); padding-top: 2rem; }
+
+        /* Specifics: Scientific & Graph */
+        .graph-display { width: 100%; height: 300px; background: white; border-radius: 12px; margin-top: 1rem; border:1px solid #ddd; }
+        
+        .sci-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 10px; 
+        }
+        .sci-btn { 
+            padding: 15px; 
+            border-radius: 10px; 
+            border: 1px solid var(--glass-border); 
+            background: rgba(255,255,255,0.1); 
+            color: var(--text-main); 
+            cursor: pointer; 
+            font-size: 1.2rem; 
+            font-weight: 500;
+            transition: 0.1s;
+        }
+        .sci-btn:active { transform: scale(0.95); }
+        .sci-btn:hover { background: rgba(255,255,255,0.25); border-color: var(--primary); }
+        
+        .sci-btn.accent { background: var(--primary); color: white; border: none; }
+        .sci-btn.accent:hover { background: var(--primary-dark); }
+        .sci-btn.danger { background: #ef4444; color: white; border: none; }
+        .sci-btn.danger:hover { background: #dc2626; }
+        
+        .legal-content h1 { color: var(--primary); margin-bottom: 1rem; }
+        .legal-content p { margin-bottom: 1rem; line-height: 1.6; }
+
+        @media(max-width: 768px) { .hero h1 { font-size: 2.5rem; } .nav-links { display: none; } }
+    </style>
+</head>
+<body class="light-mode">
+
+    <!-- Background Elements -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar glass">
+        <div class="brand" onclick="goHome()">
+            <i data-lucide="box"></i> MasterCalc Pro
+        </div>
+        <div class="nav-links">
+            <a onclick="goHome()" class="nav-link">Home</a>
+            <a onclick="scrollToSection('tools')" class="nav-link">Tools</a>
+            <a onclick="scrollToSection('about')" class="nav-link">About</a>
+            <button class="theme-btn" id="themeToggle"><i data-lucide="moon"></i></button>
+        </div>
+    </nav>
+
+    <!-- HOME PAGE -->
+    <div id="home-view">
+        
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Precision Tools for<br>Modern Problems.</h1>
+            <p>A professional suite of 16 advanced calculators including Area, Profit/Loss, and Finance tools.</p>
+            <button onclick="scrollToSection('tools')" class="cta-btn">Start Calculating</button>
+        </section>
+
+        <div class="container">
+            
+            <!-- Tools Grid -->
+            <div id="tools" class="section-header">
+                <h2>Our Professional Tools</h2>
+                <p>Select a tool to get instant results.</p>
+            </div>
+
+            <!-- Finance -->
+            <h3 style="margin-bottom:1rem; opacity:0.8;">Finance & Business</h3>
+            <div class="grid">
+                <div class="card glass" onclick="openTool('currency')">
+                    <div class="icon-box bg-green"><i data-lucide="globe"></i></div>
+                    <h3>Global Currency</h3>
+                    <p>Live exchange rates (150+).</p>
+                </div>
+                <div class="card glass" onclick="openTool('profit')">
+                    <div class="icon-box bg-teal"><i data-lucide="trending-up"></i></div>
+                    <h3>Profit & Loss</h3>
+                    <p>ROI and Margin (Red/Green).</p>
+                </div>
+                <div class="card glass" onclick="openTool('gst')">
+                    <div class="icon-box bg-red"><i data-lucide="receipt"></i></div>
+                    <h3>GST Calculator</h3>
+                    <p>Tax inclusive/exclusive.</p>
+                </div>
+                <div class="card glass" onclick="openTool('emi')">
+                    <div class="icon-box bg-blue"><i data-lucide="landmark"></i></div>
+                    <h3>Loan EMI</h3>
+                    <p>Mortgage & interest planner.</p>
+                </div>
+                <div class="card glass" onclick="openTool('discount')">
+                    <div class="icon-box bg-orange"><i data-lucide="tag"></i></div>
+                    <h3>Discount Calc</h3>
+                    <p>Calculate savings & price.</p>
+                </div>
+                <div class="card glass" onclick="openTool('tip')">
+                    <div class="icon-box bg-purple"><i data-lucide="coins"></i></div>
+                    <h3>Tip Calculator</h3>
+                    <p>Split bills easily.</p>
+                </div>
+            </div>
+
+            <!-- Math & Science -->
+            <h3 style="margin: 3rem 0 1rem; opacity:0.8;">Math, Science & Area</h3>
+            <div class="grid">
+                <div class="card glass" onclick="openTool('area')">
+                    <div class="icon-box bg-red"><i data-lucide="box-select"></i></div>
+                    <h3>Area Calculator</h3>
+                    <p>Circle, Rect, Square, Triangle.</p>
+                </div>
+                <div class="card glass" onclick="openTool('scientific')">
+                    <div class="icon-box bg-blue"><i data-lucide="calculator"></i></div>
+                    <h3>Scientific Calc</h3>
+                    <p>Trig, Logs, Exponents, Roots.</p>
+                </div>
+                <div class="card glass" onclick="openTool('graph')">
+                    <div class="icon-box bg-purple"><i data-lucide="line-chart"></i></div>
+                    <h3>Graph Plotter</h3>
+                    <p>Visualize functions.</p>
+                </div>
+                <div class="card glass" onclick="openTool('probability')">
+                    <div class="icon-box bg-green"><i data-lucide="dices"></i></div>
+                    <h3>Probability</h3>
+                    <p>Odds and outcomes.</p>
+                </div>
+                <div class="card glass" onclick="openTool('programmer')">
+                    <div class="icon-box bg-dark"><i data-lucide="code-2"></i></div>
+                    <h3>Programmer</h3>
+                    <p>Bin, Hex, Octal conv.</p>
+                </div>
+            </div>
+
+            <!-- Utilities -->
+            <h3 style="margin: 3rem 0 1rem; opacity:0.8;">Utilities & Health</h3>
+            <div class="grid">
+                <div class="card glass" onclick="openTool('bmi')">
+                    <div class="icon-box bg-pink"><i data-lucide="activity"></i></div>
+                    <h3>BMI Check</h3>
+                    <p>Body Mass Index status.</p>
+                </div>
+                <div class="card glass" onclick="openTool('password')">
+                    <div class="icon-box bg-dark"><i data-lucide="lock"></i></div>
+                    <h3>Password Gen</h3>
+                    <p>Secure crypto passwords.</p>
+                </div>
+                <div class="card glass" onclick="openTool('age')">
+                    <div class="icon-box bg-purple"><i data-lucide="cake"></i></div>
+                    <h3>Age Calculator</h3>
+                    <p>Precise age in days.</p>
+                </div>
+                <div class="card glass" onclick="openTool('date')">
+                    <div class="icon-box bg-teal"><i data-lucide="calendar"></i></div>
+                    <h3>Date Difference</h3>
+                    <p>Calculate days between.</p>
+                </div>
+                <div class="card glass" onclick="openTool('percentage')">
+                    <div class="icon-box bg-orange"><i data-lucide="percent"></i></div>
+                    <h3>Percentage</h3>
+                    <p>Simple % calculations.</p>
+                </div>
+            </div>
+
+            <!-- About Section -->
+            <section id="about" class="about glass">
+                <h2>Why MasterCalc Pro?</h2>
+                <p style="max-width:600px; margin: 1rem auto; color:var(--text-muted);">
+                    We provide a unified platform for complex calculations. Built with modern web technologies, ensuring zero latency and maximum privacy.
+                </p>
+                <div class="stats">
+                    <div class="stat-item"><h3>17</h3><p>Tools</p></div>
+                    <div class="stat-item"><h3>0ms</h3><p>Latency</p></div>
+                    <div class="stat-item"><h3>100%</h3><p>Free</p></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div>
+                    <h3 class="brand" style="margin-bottom:1rem"><i data-lucide="box"></i> MasterCalc Pro</h3>
+                    <p style="color:var(--text-muted)">The ultimate calculation suite for the modern web.</p>
+                </div>
+                <div>
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a onclick="goHome()">Home</a></li>
+                        <li><a onclick="scrollToSection('tools')">All Tools</a></li>
+                        <li><a onclick="scrollToSection('about')">About Us</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Legal & Privacy</h4>
+                    <ul>
+                        <li><a onclick="openLegal('privacy')">Privacy Policy</a></li>
+                        <li><a onclick="openLegal('terms')">Terms & Conditions</a></li>
+                        <li><a onclick="openLegal('disclaimer')">Disclaimer</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2025 MasterCalc Pro. All rights reserved. Not financial advice.
+            </div>
+        </footer>
+    </div>
+
+    <!-- APP INTERFACE (Tool View) -->
+    <div id="app-view">
+        <div class="view-container">
+            <div class="back-btn" onclick="goHome()">
+                <i data-lucide="arrow-left"></i> Back to Home
+            </div>
+            <div class="tool-panel glass">
+                <h2 id="tool-title" style="margin-bottom: 2rem; font-size: 2rem; color:var(--primary);">Tool Name</h2>
+                <div id="tool-content"></div>
+                <div id="result-area" class="result-box" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEGAL INTERFACE -->
+    <div id="legal-view">
+        <div class="view-container">
+            <div class="back-btn" onclick="goHome()">
+                <i data-lucide="arrow-left"></i> Back to Home
+            </div>
+            <div class="tool-panel glass legal-content" id="legal-content-box"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL STATE ---
+        const homeView = document.getElementById('home-view');
+        const appView = document.getElementById('app-view');
+        const legalView = document.getElementById('legal-view');
+        const toolContent = document.getElementById('tool-content');
+        const toolTitle = document.getElementById('tool-title');
+        const resultArea = document.getElementById('result-area');
+        const legalBox = document.getElementById('legal-content-box');
+        const themeBtn = document.getElementById('themeToggle');
+
+        // --- NAVIGATION ---
+        function hideAll() { homeView.style.display = 'none'; appView.style.display = 'none'; legalView.style.display = 'none'; window.scrollTo({top: 0}); }
+        function goHome() { hideAll(); homeView.style.display = 'block'; }
+        function scrollToSection(id) { goHome(); setTimeout(() => document.getElementById(id).scrollIntoView({ behavior: 'smooth' }), 100); }
+
+        // --- LEGAL TEXTS ---
+        const legalTexts = {
+            privacy: `<h1>Privacy Policy</h1><p>Last Updated: 2025</p><p>We respect your privacy. All calculations (except currency rates) are processed locally on your device.</p>`,
+            terms: `<h1>Terms of Service</h1><p>Free for personal use. Do not resell.</p>`,
+            disclaimer: `<h1>Disclaimer</h1><p>Tools are for informational purposes only. Not financial advice.</p>`
+        };
+        function openLegal(t) { hideAll(); legalView.style.display = 'block'; legalBox.innerHTML = legalTexts[t]; }
+
+        // --- TOOL OPENER ---
+        function openTool(toolId) {
+            hideAll();
+            appView.style.display = 'block';
+            toolContent.innerHTML = '';
+            resultArea.style.display = 'none';
+            renderTool(toolId);
+            lucide.createIcons();
+        }
+
+        themeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            themeBtn.innerHTML = document.body.classList.contains('dark-mode') ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>';
+            lucide.createIcons();
+        });
+
+        // --- RENDER TOOLS ---
+        const currencyList = ["USD","INR","EUR","GBP","AED","JPY","AUD","CAD","CNY","SAR","PKR","BDT","RUB","SGD"];
+
+        function renderTool(tool) {
+            let html = '';
+            // FINANCE
+            if (tool === 'currency') {
+                toolTitle.innerText = "Global Currency Converter";
+                let opts = currencyList.map(c => `<option value="${c}">${c}</option>`).join('');
+                html = `<div class="input-group"><label class="label">Amount</label><input type="number" id="c-amt" class="input" value="1"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem"><div class="input-group"><label class="label">From</label><select id="c-from" class="input">${opts}</select></div><div class="input-group"><label class="label">To</label><select id="c-to" class="input">${opts.replace('value="USD"', 'value="USD"').replace('value="INR"', 'value="INR" selected')}</select></div></div><button class="btn-action" onclick="runCurrency()">Convert</button>`;
+            } else if (tool === 'profit') {
+                toolTitle.innerText = "Profit & Loss Calculator";
+                html = `<div class="input-group"><label class="label">Cost Price</label><input type="number" id="pl-cp" class="input"></div><div class="input-group"><label class="label">Selling Price</label><input type="number" id="pl-sp" class="input"></div><button class="btn-action" onclick="runProfit()">Calculate</button>`;
+            } else if (tool === 'gst') {
+                toolTitle.innerText = "GST Calculator";
+                html = `<div class="input-group"><label class="label">Amount</label><input type="number" id="g-amt" class="input"></div><div class="input-group"><label class="label">Tax (%)</label><select id="g-rate" class="input"><option value="5">5%</option><option value="12">12%</option><option value="18" selected>18%</option><option value="28">28%</option></select></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem"><button class="btn-action" style="background:#22c55e" onclick="runGST(true)">Add GST</button><button class="btn-action" style="background:#ef4444" onclick="runGST(false)">Remove GST</button></div>`;
+            } else if (tool === 'emi') {
+                toolTitle.innerText = "Loan EMI Calculator";
+                html = `<div class="input-group"><label class="label">Loan Amount</label><input type="number" id="e-p" class="input"></div><div class="input-group"><label class="label">Interest Rate (%)</label><input type="number" id="e-r" class="input"></div><div class="input-group"><label class="label">Tenure (Months)</label><input type="number" id="e-n" class="input"></div><button class="btn-action" onclick="runEMI()">Calculate</button>`;
+            } else if (tool === 'discount') {
+                toolTitle.innerText = "Discount Calculator";
+                html = `<div class="input-group"><label class="label">Price</label><input type="number" id="d-p" class="input"></div><div class="input-group"><label class="label">Discount %</label><input type="number" id="d-r" class="input"></div><button class="btn-action" onclick="runDiscount()">Calculate</button>`;
+            } else if (tool === 'tip') {
+                toolTitle.innerText = "Tip Calculator";
+                html = `<div class="input-group"><label class="label">Bill Amount</label><input type="number" id="t-b" class="input"></div><div class="input-group"><label class="label">Tip %</label><input type="number" id="t-p" class="input" value="15"></div><button class="btn-action" onclick="runTip()">Calculate Total</button>`;
+            }
+            
+            // AREA / MATH
+            else if (tool === 'area') {
+                toolTitle.innerText = "Area Calculator";
+                html = `<div class="input-group"><label class="label">Select Shape</label><select id="ar-s" class="input" onchange="updArea()"><option value="c">Circle</option><option value="r">Rectangle</option><option value="sq">Square</option><option value="t">Triangle</option></select></div><div id="ar-inp"></div><button class="btn-action" onclick="runArea()">Calculate Area</button>`;
+                setTimeout(updArea, 50);
+            }
+            else if (tool === 'scientific') {
+                toolTitle.innerText = "Scientific Calculator";
+                html = `
+                    <input type="text" id="sci-disp" class="input" style="text-align:right;font-size:1.5rem;margin-bottom:1rem;font-family:monospace" readonly>
+                    <div class="sci-grid">
+                        <button class="sci-btn" onclick="sc('sin(')">sin</button>
+                        <button class="sci-btn" onclick="sc('cos(')">cos</button>
+                        <button class="sci-btn" onclick="sc('tan(')">tan</button>
+                        <button class="sci-btn danger" onclick="scClr()">AC</button>
+                        
+                        <button class="sci-btn" onclick="sc('log(')">log</button>
+                        <button class="sci-btn" onclick="sc('log(')">ln</button>
+                        <button class="sci-btn" onclick="sc('(')">(</button>
+                        <button class="sci-btn" onclick="sc(')')">)</button>
+
+                        <button class="sci-btn" onclick="sc('sqrt(')">√</button>
+                        <button class="sci-btn" onclick="sc('^')">^</button>
+                        <button class="sci-btn" onclick="scDel()">DEL</button>
+                        <button class="sci-btn accent" onclick="sc('/')">÷</button>
+                        
+                        <button class="sci-btn" onclick="sc('7')">7</button>
+                        <button class="sci-btn" onclick="sc('8')">8</button>
+                        <button class="sci-btn" onclick="sc('9')">9</button>
+                        <button class="sci-btn accent" onclick="sc('*')">×</button>
+                        
+                        <button class="sci-btn" onclick="sc('4')">4</button>
+                        <button class="sci-btn" onclick="sc('5')">5</button>
+                        <button class="sci-btn" onclick="sc('6')">6</button>
+                        <button class="sci-btn accent" onclick="sc('-')">-</button>
+                        
+                        <button class="sci-btn" onclick="sc('1')">1</button>
+                        <button class="sci-btn" onclick="sc('2')">2</button>
+                        <button class="sci-btn" onclick="sc('3')">3</button>
+                        <button class="sci-btn accent" onclick="sc('+')">+</button>
+
+                        <button class="sci-btn" onclick="sc('e')">e</button>
+                        <button class="sci-btn" onclick="sc('0')">0</button>
+                        <button class="sci-btn" onclick="sc('.')">.</button>
+                        <button class="sci-btn accent" onclick="scEq()">=</button>
+                    </div>`;
+            } else if (tool === 'graph') {
+                toolTitle.innerText = "Graph Plotter";
+                html = `<div class="input-group"><label class="label">Function f(x)</label><input type="text" id="gr-fn" class="input" value="x^2"></div><button class="btn-action" onclick="runGraph()">Plot</button><div id="gr-box" class="graph-display"></div>`;
+            } else if (tool === 'probability') {
+                toolTitle.innerText = "Probability Calculator";
+                html = `<div class="input-group"><label class="label">Total Outcomes</label><input type="number" id="pb-t" class="input"></div><div class="input-group"><label class="label">Favorable Outcomes</label><input type="number" id="pb-f" class="input"></div><button class="btn-action" onclick="runProb()">Calculate Probability</button>`;
+            } else if (tool === 'programmer') {
+                toolTitle.innerText = "Programmer Converter";
+                html = `<div class="input-group"><label class="label">Decimal</label><input type="number" id="pr-d" class="input" oninput="runProg('d')"></div><div class="input-group"><label class="label">Binary</label><input type="text" id="pr-b" class="input" oninput="runProg('b')"></div><div class="input-group"><label class="label">Hex</label><input type="text" id="pr-h" class="input" oninput="runProg('h')"></div>`;
+            }
+
+            // UTILITIES
+            else if (tool === 'bmi') {
+                toolTitle.innerText = "BMI Calculator";
+                html = `<div class="input-group"><label class="label">Weight (kg)</label><input type="number" id="b-w" class="input"></div><div class="input-group"><label class="label">Height (cm)</label><input type="number" id="b-h" class="input"></div><button class="btn-action" onclick="runBMI()">Calculate</button>`;
+            } else if (tool === 'password') {
+                toolTitle.innerText = "Password Generator";
+                html = `<div class="input-group"><label class="label">Length: <span id="pw-l">12</span></label><input type="range" id="pw-len" class="input" min="6" max="32" value="12" oninput="document.getElementById('pw-l').innerText=this.value"></div><div style="margin-bottom:1rem"><label><input type="checkbox" id="pw-u" checked> Uppercase</label> &nbsp; <label><input type="checkbox" id="pw-n" checked> Numbers</label> &nbsp; <label><input type="checkbox" id="pw-s" checked> Symbols</label></div><button class="btn-action" onclick="runPass()">Generate</button>`;
+            } else if (tool === 'age') {
+                toolTitle.innerText = "Age Calculator";
+                html = `<div class="input-group"><label class="label">Date of Birth</label><input type="date" id="a-dob" class="input"></div><button class="btn-action" onclick="runAge()">Calculate Age</button>`;
+            } else if (tool === 'date') {
+                toolTitle.innerText = "Date Difference";
+                html = `<div class="input-group"><label class="label">Start</label><input type="date" id="dt-1" class="input"></div><div class="input-group"><label class="label">End</label><input type="date" id="dt-2" class="input"></div><button class="btn-action" onclick="runDateDiff()">Count Days</button>`;
+            } else if (tool === 'percentage') {
+                toolTitle.innerText = "Percentage Calculator";
+                html = `<div class="input-group"><label class="label">Value</label><input type="number" id="pc-v" class="input"></div><div class="input-group"><label class="label">Total</label><input type="number" id="pc-t" class="input"></div><button class="btn-action" onclick="runPercentage()">Calculate %</button>`;
+            }
+
+            toolContent.innerHTML = html;
+        }
+
+        // --- CALCULATION LOGIC ---
+        function showRes(t) { resultArea.style.display='block'; resultArea.innerHTML = t; }
+
+        async function runCurrency() {
+            const a=document.getElementById('c-amt').value, f=document.getElementById('c-from').value, t=document.getElementById('c-to').value;
+            showRes("Fetching...");
+            try { const r=await fetch(`https://open.er-api.com/v6/latest/${f}`); const d=await r.json(); showRes(`${a} ${f} = <span style="color:var(--primary)">${(a*d.rates[t]).toFixed(2)} ${t}</span>`); } catch { showRes("Error"); }
+        }
+
+        function runProfit(){ 
+            const c=parseFloat(document.getElementById('pl-cp').value); 
+            const s=parseFloat(document.getElementById('pl-sp').value); 
+            const p=s-c; 
+            const color = p >= 0 ? 'var(--green-profit)' : 'var(--red-loss)';
+            const label = p >= 0 ? 'Profit' : 'Loss';
+            showRes(`<span style="color:${color}; font-size:1.5rem; font-weight:bold">${label}: ${Math.abs(p)} (${((Math.abs(p)/c)*100).toFixed(2)}%)</span>`); 
+        }
+
+        function runBMI(){ const w=document.getElementById('b-w').value, h=document.getElementById('b-h').value/100; if(!w||!h)return; const b=(w/(h*h)).toFixed(1); let c=b<18.5?"Underweight":b<25?"Normal":b<30?"Overweight":"Obese"; showRes(`BMI: ${b} (${c})`); }
+        function runPass(){ const l=document.getElementById('pw-len').value, s="abcdefghijklmnopqrstuvwxyz"+(document.getElementById('pw-u').checked?"ABCDEFGHIJKLMNOPQRSTUVWXYZ":"")+(document.getElementById('pw-n').checked?"0123456789":"")+(document.getElementById('pw-s').checked?"!@#$%^&*":""); let p=""; for(let i=0;i<l;i++)p+=s.charAt(Math.floor(Math.random()*s.length)); showRes(`<span style="font-family:monospace;user-select:all">${p}</span>`); }
+        function runGST(add){ const a=parseFloat(document.getElementById('g-amt').value), r=parseFloat(document.getElementById('g-rate').value), g=add?(a*r)/100:a-(a/(1+r/100)); showRes(`GST: ${g.toFixed(2)} | Total: ${(add?a+g:a-g).toFixed(2)}`); }
+        function runEMI(){ const p=document.getElementById('e-p').value, r=document.getElementById('e-r').value/1200, n=document.getElementById('e-n').value; showRes(`Monthly EMI: ${(p*r*(Math.pow(1+r,n)/(Math.pow(1+r,n)-1))).toFixed(2)}`); }
+        function runDiscount(){ const p=document.getElementById('d-p').value, r=document.getElementById('d-r').value, s=(p*r)/100; showRes(`Pay: ${(p-s).toFixed(2)} (Save ${s.toFixed(2)})`); }
+        function runAge(){ const d=new Date(document.getElementById('a-dob').value); showRes(`${Math.abs(new Date(Date.now()-d.getTime()).getUTCFullYear()-1970)} Years Old`); }
+        function runDateDiff(){ const d1=new Date(document.getElementById('dt-1').value), d2=new Date(document.getElementById('dt-2').value); showRes(`${Math.ceil(Math.abs(d2-d1)/(86400000))} Days`); }
+        function runTip(){ const b=parseFloat(document.getElementById('t-b').value), p=parseFloat(document.getElementById('t-p').value), t=(b*p)/100; showRes(`Tip: ${t.toFixed(2)} | Total: ${(b+t).toFixed(2)}`); }
+        function runPercentage(){ const v=document.getElementById('pc-v').value, t=document.getElementById('pc-t').value; showRes(`${((v/t)*100).toFixed(2)}%`); }
+        
+        // Area Logic
+        function updArea(){ const s=document.getElementById('ar-s').value; const b=document.getElementById('ar-inp'); 
+            if(s==='c') b.innerHTML='<div class="input-group"><label class="label">Radius</label><input id="ar-1" class="input"></div>';
+            else if(s==='sq') b.innerHTML='<div class="input-group"><label class="label">Side</label><input id="ar-1" class="input"></div>';
+            else if(s==='r') b.innerHTML='<div class="input-group"><label class="label">Length</label><input id="ar-1" class="input"></div><div class="input-group"><label class="label">Width</label><input id="ar-2" class="input"></div>';
+            else b.innerHTML='<div class="input-group"><label class="label">Base</label><input id="ar-1" class="input"></div><div class="input-group"><label class="label">Height</label><input id="ar-2" class="input"></div>';
+        }
+        function runArea(){ 
+            const s=document.getElementById('ar-s').value; 
+            const v1=parseFloat(document.getElementById('ar-1').value); 
+            let a=0;
+            if(s==='c') a=Math.PI*v1*v1;
+            else if(s==='sq') a=v1*v1;
+            else { const v2=parseFloat(document.getElementById('ar-2').value); if(s==='r') a=v1*v2; else a=0.5*v1*v2; }
+            showRes(`Area: ${a.toFixed(2)} sq units`); 
+        }
+
+        // Sci & Graph
+        function runProb(){ const t=document.getElementById('pb-t').value, f=document.getElementById('pb-f').value; showRes(`Probability: ${((f/t)*100).toFixed(2)}%`); }
+        function runProg(t){ try{ let d; if(t==='d') d=parseInt(document.getElementById('pr-d').value); if(t==='b') d=parseInt(document.getElementById('pr-b').value,2); if(t==='h') d=parseInt(document.getElementById('pr-h').value,16); if(!isNaN(d)){ if(t!=='d')document.getElementById('pr-d').value=d; if(t!=='b')document.getElementById('pr-b').value=d.toString(2); if(t!=='h')document.getElementById('pr-h').value=d.toString(16).toUpperCase(); } }catch{} }
+        
+        function sc(v){document.getElementById('sci-disp').value+=v} 
+        function scClr(){document.getElementById('sci-disp').value=''} 
+        function scDel(){let v=document.getElementById('sci-disp').value; document.getElementById('sci-disp').value=v.substring(0,v.length-1)}
+        function scEq(){try{document.getElementById('sci-disp').value=math.evaluate(document.getElementById('sci-disp').value)}catch{document.getElementById('sci-disp').value='Error'}}
+        
+        function runGraph(){const f=document.getElementById('gr-fn').value, b=document.getElementById('gr-box'); try{let p=""; for(let x=-10;x<=10;x+=0.5){let y=math.evaluate(f,{x}); let px=((x+10)/20)*100, py=100-((y+10)/20)*100; if(py>=0&&py<=100)p+=`${px},${py} `} b.innerHTML=`<svg width="100%" height="100%" preserveAspectRatio="none"><polyline points="${p}" fill="none" stroke="#4f46e5" stroke-width="2"/></svg>`}catch{b.innerHTML="Invalid"}}
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
